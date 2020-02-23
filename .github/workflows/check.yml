@@ -19,9 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Verify module versions do not exist yet
-      run: |
-        ./tools/publisher \
-          -check \
-          -bucket=${BUCKET_NAME} \
-          -region=${BUCKET_REGION} \
-          -diff=${GIT_BASE_SHA}
+        run: |
+          ./tools/publisher \
+            -check \
+            -bucket=${BUCKET_NAME} \
+            -region=${BUCKET_REGION} \
+            -diff=${GIT_BASE_SHA}
