@@ -112,7 +112,7 @@ function check_module_exists() {
         log_warn "Looks like module ${module_path} already exists, did you bump the version?"
         return 1
     else
-        log_info "Looks like module ${module_path} doesn't exist yet."
+        log_pass "Looks like module ${module_path} doesn't exist yet."
     fi
 }
 

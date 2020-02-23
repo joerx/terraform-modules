@@ -16,7 +16,5 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
     steps:
       - uses: actions/checkout@v1
-      - name: Check AWS identity
-        run: aws sts get-caller-identity
-      - name: Verify module versions
+      - name: Verify module versions do not exist yet
         run: ./tools/publisher -bucket=tfmodules.lolcatz.de -region=ap-southeast-1 -check -diff=${GIT_BASE_SHA}
