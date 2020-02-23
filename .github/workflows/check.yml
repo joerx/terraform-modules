@@ -17,4 +17,4 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Verify module versions
-        run: ./tools/publisher -bucket=tfmodules.lolcatz.de -region=ap-southeast-1 -check -diff=${GIT_BASE_SHA}
+        run: ./tools/publisher -bucket=tfmodules.lolcatz.de -region=ap-southeast-1 -check -diff=${GIT_BASE_SHA} -debug
