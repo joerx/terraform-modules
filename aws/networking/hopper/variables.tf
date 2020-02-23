@@ -1,9 +1,25 @@
+variable "name" {
+  type    = string
+  default = null
+}
+
 variable "env" {
   type = string
 }
 
-variable "namespace" {
-  type = string
+variable "service" {
+  type    = string
+  default = "hopper"
+}
+
+variable "owner" {
+  type    = string
+  default = "netadmin"
+}
+
+variable "tier" {
+  type    = string
+  default = "networking"
 }
 
 variable "ami" {

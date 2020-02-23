@@ -1,19 +1,22 @@
 locals {
-  namespace = format("%s-hopper", var.namespace)
-
-  tags = {
-    Terraform   = true
-    Environment = var.env
-    Name        = local.namespace
-    Role        = "hopper"
-  }
-
   keyfile_output_path = var.keyfile_output_path != null ? var.keyfile_output_path : "${path.module}/out/key_rsa.pem"
 
   instance_id = aws_instance.hopper.id
   public_ip   = aws_instance.hopper.public_ip
   ssh_key     = local_file.admin_private_key.filename
   login       = format("ssh -i %s %s@%s", local.ssh_key, var.ami.user, local.public_ip)
+}
+
+module "naming" {
+  source  = "git@github.com:/joerx/terraform-modules//global/naming?ref=aaf63f8"
+  env     = var.env
+  service = var.service
+  owner   = var.owner
+  tier    = var.tier
+
+  tags = {
+    Name = var.name
+  }
 }
 
 # AMI Lookup
@@ -41,45 +44,19 @@ resource "tls_private_key" "admin" {
 
 resource "local_file" "admin_private_key" {
   sensitive_content    = tls_private_key.admin.private_key_pem
-  filename             = local.keyfile_output_path # "${path.module}/out/key_rsa.pem"
+  filename             = local.keyfile_output_path
   file_permission      = "0400"
   directory_permission = "0755"
 }
 
 resource "aws_key_pair" "admin" {
-  key_name   = local.namespace
+  key_name   = module.naming.namespace
   public_key = tls_private_key.admin.public_key_openssh
+  tags       = module.naming.tags
 }
 
 resource "random_shuffle" "subnet" {
   input = var.subnet_ids
-}
-
-resource "aws_security_group" "sg" {
-  description = "Allow traffic to hopper"
-  name        = local.namespace
-  vpc_id      = var.vpc_id
-  tags        = local.tags
-}
-
-resource "aws_security_group_rule" "allow_ssh" {
-  type              = "ingress"
-  from_port         = 22
-  to_port           = 22
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
-  security_group_id = aws_security_group.sg.id
-}
-
-resource "aws_security_group_rule" "egress" {
-  type              = "egress"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "all"
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
-  security_group_id = aws_security_group.sg.id
 }
 
 resource "aws_instance" "hopper" {
@@ -95,5 +72,5 @@ resource "aws_instance" "hopper" {
     ignore_changes = [ami]
   }
 
-  tags = local.tags
+  tags = module.naming.tags
 }
