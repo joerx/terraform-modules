@@ -147,9 +147,9 @@ function check_args() {
 
     web_url=${web_url:-"http://${s3_bucket}.s3-website-${s3_region}.amazonaws.com"}
 
-    log_info "S3 Bucket: '${s3_bucket}'"
-    log_info "S3 Region: '${s3_region}'"
-    log_info "Web url: '${web_url}'"
+    log_debug "S3 Bucket: '${s3_bucket}'"
+    log_debug "S3 Region: '${s3_region}'"
+    log_debug "Web url: '${web_url}'"
 }
 
 function check_modules() {
