@@ -11,7 +11,8 @@ web_url=""
 module_paths=()
 
 out_dir="./out"
-diff_to="origin/master"
+diff_to=""
+base_path="."
 publish="no"
 check_only="no"
 
@@ -45,6 +46,10 @@ function parse_opts() {
                 check_only="yes"
                 shift
                 ;;
+            -path)
+                base_path="${i#*=}"
+                shift
+                ;;
             -debug)
                 YIO_DEBUG="yes"
                 shift
@@ -66,8 +71,8 @@ function find_modules() {
         log_info "Checking changed modules compared to ${diff_to}"
         modules=$(list_changed_modules_in_diff ${diff_to})
     else
-        log_info "Using all modules in workspace"
-        modules=$(list_modules ${b})
+        log_info "Using all modules in '${base_path}'"
+        modules=$(list_modules_in_path ${base_path})
     fi
 
     echo ${modules} | sed 's@/$@@'

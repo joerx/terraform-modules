@@ -2,8 +2,13 @@ name: Check modules
 
 on:
   pull_request:
-    types: [edited, opened, reopened, synchronize]
-    branches: [master]
+    types: 
+      - edited
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - master
 
 jobs:
   validate_modules:

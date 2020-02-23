@@ -4,7 +4,7 @@ col_green="\e[32m"
 col_yellow="\e[33m"
 
 # List modules in given path. Any directory incuding the path itself that contain *.tf files will be regarded.
-function list_modules() {
+function list_modules_in_path() {
     _pushd ${1}
     find . -type f -name '*.tf' -not -path */.terraform/* | xargs -n1 dirname | sort | uniq | sed s@^./@@
     _popd
