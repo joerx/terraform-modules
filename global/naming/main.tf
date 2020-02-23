@@ -1,5 +1,5 @@
 locals {
-  slug = var.slug != null ? var.slug : upper(replace(var.service, "/[^A-Za-z0-9]+/", "-"))
+  slug = var.slug != null ? var.slug : lower(replace(var.service, "/[^A-Za-z0-9]+/", "-"))
 
   namespace = join("-", [var.env, local.slug])
   path      = join("/", [var.env, "service", local.slug])
@@ -7,6 +7,7 @@ locals {
 
   default_tags = {
     Terraform   = true
+    Name        = local.namespace
     Environment = var.env
     Service     = var.service
     Owner       = var.owner
