@@ -128,15 +128,16 @@ function publish_module() {
     test $rc -eq 0 || return 1
 
     # upload it
-    out=$(aws s3 --region ${s3_region} cp ${out_dir}/${module_path} ${upload_url} --acl public-read)
+    out=$(aws s3 --region ${s3_region} cp ${out_dir}/${module_path} ${upload_url} --acl public-read 2>&1); rc=$?
 
-    log_debug "$out"
+    # log_debug "$out"
 
     if [[ $rc -eq 0 ]]; then
         log_success "Published to ${web_url}"
         return 0
     else
-        log_error "Failed to publish: ${out}"
+        log "${out}"
+        log_error "Failed to publish ${module_path}"
         return 1
     fi
 }

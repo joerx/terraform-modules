@@ -32,7 +32,11 @@ function log_debug() {
 }
 
 function log_info() {
-    >&2 printf "Info:  ${@}\n"
+    >&2 printf "Info: ${@}\n"
+}
+
+function log() {
+    >&2 printf "${@}\n"
 }
 
 function log_success() {
