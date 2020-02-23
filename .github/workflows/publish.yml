@@ -18,11 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: echo ${GIT_BASE_SHA}
-      # - name: Publish modules
-      #   run: |
-      #     ./tools/publisher \
-      #       -publish \
-      #       -bucket=${BUCKET_NAME} \
-      #       -region=${BUCKET_REGION} \
-      #       -web-url=http://${BUCKET_NAME} \
-      #       -diff=
+      - name: Publish modules
+        run: |
+          ./tools/publisher \
+            -publish \
+            -bucket=${BUCKET_NAME} \
+            -region=${BUCKET_REGION} \
+            -web-url=http://${BUCKET_NAME} \
+            -diff=${GIT_BASE_SHA}
