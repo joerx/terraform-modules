@@ -1,0 +1,27 @@
+name: Check modules
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  validate_modules:
+    name: Validate module versions
+    runs-on: ubuntu-18.04
+    env:
+      GIT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+      BUCKET_REGION: ${{ secrets.BUCKET_REGION }}
+    steps:
+      - uses: actions/checkout@v1
+      - name: Publish module
+        run: |
+          ./tools/publisher \
+            -publish \
+            -bucket=${BUCKET_NAME} \
+            -region=${BUCKET_REGION} \
+            -web-url=http://${BUCKET_NAME} \
+            -diff=${GIT_BASE_SHA}
