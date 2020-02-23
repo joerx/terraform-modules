@@ -19,4 +19,4 @@ jobs:
       - name: Check AWS identity
         run: aws sts get-caller-identity
       - name: Verify module versions
-        run: ./tools/publisher -bucket=tfmodules.lolcatz.de -region=ap-southeast-1 -check -diff=${GIT_BASE_SHA} -debug
+        run: ./tools/publisher -bucket=tfmodules.lolcatz.de -region=ap-southeast-1 -check -diff=${GIT_BASE_SHA}
