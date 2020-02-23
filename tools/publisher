@@ -1,0 +1,253 @@
+#!/bin/bash
+
+set -e -o pipefail
+
+b="$(dirname ${BASH_SOURCE[0]})"
+source ${b}/functions.sh
+
+s3_bucket=""
+s3_region=""
+web_url=""
+module_paths=()
+
+out_dir="./out"
+diff_to="origin/master"
+publish="no"
+check_only="no"
+
+YIO_DEBUG=""
+
+function parse_opts() {
+    local 
+    for i in "$@"; do
+        case $i in
+            -diff=*)
+                diff_to="${i#*=}"
+                shift
+                ;;
+            -publish)
+                publish="yes"
+                shift
+                ;;
+            -bucket=*)
+                s3_bucket="${i#*=}"
+                shift
+                ;;
+            -region=*)
+                s3_region="${i#*=}"
+                shift
+                ;;
+            -web-url=*)
+                web_url="${i#*=}"
+                shift
+                ;;
+            -check)
+                check_only="yes"
+                shift
+                ;;
+            -debug)
+                YIO_DEBUG="yes"
+                shift
+                ;;
+            *)
+                module_paths+=( "${i#*=}" )
+                shift
+                ;;
+        esac
+    done
+}
+
+function find_modules() {
+    # List modules in workspace, passed via CLI or for compare url
+    if [[ ${#module_paths[*]} -gt 0 ]]; then
+        log_info "Using modules from command line"
+        modules=${module_paths[*]}
+    elif [[ ! -z "${diff_to}" ]]; then
+        log_info "Checking changed modules compared to ${diff_to}"
+        modules=$(list_changed_modules_in_diff ${diff_to})
+    else
+        log_info "Using all modules in workspace"
+        modules=$(list_modules ${b})
+    fi
+
+    echo ${modules} | sed 's@/$@@'
+}
+
+function package_module() {
+    local m=${1}
+    local out_dir=${2}
+
+    local version
+    local module_path
+    local archive_path 
+    
+    version=$(get_module_version ${m})
+    module_path=${m}-${version}
+    archive_path=$(_abspath ${out_dir})/${module_path}
+
+    log_info "Packaging module ${m}"
+
+    mkdir -p $(dirname ${archive_path})
+
+    _pushd ${m}
+    find . -type f -not -path '*/.terraform/*' -exec tar rf ${archive_path}.tar {} \;
+    gzip -f ${archive_path}.tar
+    _popd
+
+    log_info "Packaged ${module_path} to ${archive_path}.tar.gz"
+
+    echo ${module_path}.tar.gz
+}
+
+function check_module_exists() {
+    local module_path=${1}
+    local rc
+    local out
+
+    out=$(aws --region ${s3_region} s3api head-object --bucket=${s3_bucket} --key=${module_path} 2>&1); rc=$?
+
+    log_debug "$out"
+
+    if [[ $rc -eq 0 ]]; then
+        log_warn "Looks like module ${module_path} already exists, did you bump the version?"
+        return 1
+    else
+        log_info "Looks like module ${module_path} doesn't exist yet."
+    fi
+}
+
+function publish_module() {
+    local module_path=$1
+    local rc
+    local out
+
+    local upload_url="s3://${s3_bucket}/${module_path}"
+    local web_url="${web_url}/${module_path}"
+
+    check_module_exists ${module_path}; rc=$?
+    test $rc -eq 0 || return 1
+
+    # upload it
+    out=$(aws s3 --region ${s3_region} cp ${out_dir}/${module_path} ${upload_url} --acl public-read)
+
+    log_debug "$out"
+
+    if [[ $rc -eq 0 ]]; then
+        log_success "Published to ${web_url}"
+        return 0
+    else
+        log_error "Failed to publish: ${out}"
+        return 1
+    fi
+}
+
+function check_args() {
+    [[ -z $s3_bucket ]] && fail "s3_bucket must be set"
+    [[ -z $s3_region ]] && fail "s3_region must be set"
+
+    web_url=${web_url:-"http://${s3_bucket}.s3-website-${s3_region}.amazonaws.com"}
+
+    log_info "S3 Bucket: '${s3_bucket}'"
+    log_info "S3 Region: '${s3_region}'"
+    log_info "Web url: '${web_url}'"
+}
+
+function check_modules() {
+    local has_failures=0
+    local rc=0
+    local modules=$(find_modules)
+
+    local version
+    local module_path
+
+    log_line
+
+    set +e
+    for m in ${modules}; do
+        # Skip paths that don't have a VERSION file in them (could be non-tf related stuff)
+        if [[ ! -f $m/VERSION ]]; then
+            log_info "No VERSION file found in $m, skipping"
+            continue
+        fi
+
+        local version=$(get_module_version ${m})
+        local module_path=${m}-${version}.tar.gz
+
+        check_module_exists $module_path; rc=$?
+        test "${rc}" == "0" || has_failures=1
+    done
+    set -e
+
+    log_line
+
+    # If any modules had errors, fail miserably
+    if [[ ${has_failures} -gt 0 ]]; then
+        log_error "Some modules failed"
+        return ${has_failures}
+    else
+        log_success "All good"
+    fi
+}
+
+function package_modules() {
+    local has_failures=0
+    local rc=0
+    local modules
+    local module_path
+
+    modules=$(find_modules)
+
+    # Create output dir if needed
+    mkdir -p ${out_dir}
+
+    # Don't fail at the first error, make sure we process all modules before failing
+    # This will make it easier to users to fix all errors instead of having to do it piecemeal
+    set +e
+    for m in ${modules}; do
+        log_line
+
+        # Skip paths that don't have a VERSION file in them (could be non-tf related stuff)
+        if [[ ! -f $m/VERSION ]]; then
+            log_info "No VERSION file found in $m, skipping"
+            continue
+        fi
+
+        # Package module
+        module_path=$(package_module ${m} ${out_dir}); rc=$?
+        if [[ "${rc}" != "0" ]]; then
+            has_failures=1
+            continue
+        fi
+
+        # If -publish was set, publish the module
+        if [[ "${publish}" == "yes" ]]; then
+            publish_module ${module_path}; rc=$?
+            if [[ "${rc}" != "0" ]]; then
+                has_failures=1
+                continue
+            fi
+        fi
+    done
+    set -e
+
+    log_line
+
+    # If any modules had errors, fail miserably
+    if [[ ${has_failures} -gt 0 ]]; then
+        log_error "Some modules failed"
+        return ${has_failures}
+    else
+        log_success "All done"
+    fi
+}
+
+parse_opts ${@}
+check_args
+
+if [[ "$check_only" == "yes" ]]; then
+    log_info "Checking versions only"
+    check_modules
+else
+    log_info "Packing modules"
+    package_modules
+fi
