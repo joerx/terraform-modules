@@ -1,4 +1,4 @@
-name: Publish modules
+name: Publish
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   validate_modules:
-    name: Validate module versions
+    name: Publish modules
     runs-on: ubuntu-18.04
     env:
       GIT_BASE_SHA: ${{ github.event.before }}
