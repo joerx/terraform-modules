@@ -8,7 +8,7 @@ locals {
 }
 
 module "naming" {
-  source  = "git@github.com:/joerx/terraform-modules//global/naming?ref=aaf63f8"
+  source  = "http://tfmodules.lolcatz.de/global/naming-v1.0.tar.gz"
   env     = var.env
   service = var.service
   owner   = var.owner
