@@ -15,3 +15,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "component" {
+  description = "Additional component name to further segment the namespace"
+  type        = string
+  default     = null
+}

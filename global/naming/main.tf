@@ -1,8 +1,8 @@
 locals {
   slug = var.slug != null ? var.slug : lower(replace(var.service, "/[^A-Za-z0-9]+/", "-"))
 
-  namespace = join("-", [var.env, local.slug])
-  path      = join("/", [var.env, "service", local.slug])
+  namespace = join("-", compact([var.env, local.slug, var.component]))
+  path      = join("/", compact([var.env, "service", local.slug, var.component]))
   iam_path  = format("/%s/", local.path)
 
   default_tags = {
