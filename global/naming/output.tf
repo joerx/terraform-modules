@@ -20,25 +20,30 @@ output "tags" {
 
 output "env" {
   description = "Service environment, i.e. stage, e.g. dev, staging, production"
-  value       = var.env
+  value       = local.context.env
 }
 
 output "service" {
   description = "Service name"
-  value       = var.service
+  value       = local.context.service
 }
 
-output "slug" {
-  description = "Service slug"
-  value       = local.slug
-}
+# output "slug" {
+#   description = "Service slug"
+#   value       = local.context.slug
+# }
 
 output "tier" {
   description = "Service tier"
-  value       = var.tier
+  value       = local.context.tier
 }
 
 output "owner" {
   description = "Team that owns the service, e.g. dba, frontend-devs, etc."
-  value       = var.owner
+  value       = local.context.owner
+}
+
+output "context" {
+  description = "Export naming to be passed as input to another naming module"
+  value       = local.context
 }
