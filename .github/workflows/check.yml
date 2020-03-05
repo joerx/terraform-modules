@@ -19,8 +19,8 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-      BUCKET_NAME: ${{ secrets.BUCKET_NAME }} 
-      BUCKET_REGION: ${{ secrets.BUCKET_REGION }} 
+      BUCKET_NAME: tfmodules.lolcatz.de
+      BUCKET_REGION: ap-southeast-1
     steps:
       - uses: actions/checkout@v1
       - name: Verify module versions do not exist yet
