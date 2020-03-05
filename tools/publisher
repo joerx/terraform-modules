@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Note: this script requires gnu-tar. On macOS, install it via `brew install gnu-tar`
+
 set -e -o pipefail
 
 b="$(dirname ${BASH_SOURCE[0]})"
@@ -78,6 +80,14 @@ function find_modules() {
     echo ${modules} | sed 's@/$@@'
 }
 
+function _tar() {
+    if type gtar > /dev/null 2>&1; then
+        gtar ${@}
+    else
+        tar ${@}
+    fi
+}
+
 function package_module() {
     local m=${1}
     local out_dir=${2}
@@ -85,21 +95,19 @@ function package_module() {
     local version
     local module_path
     local archive_path 
+    local v
     
     version=$(get_module_version ${m})
     module_path=${m}-${version}
-    archive_path=$(_abspath ${out_dir})/${module_path}
+    archive_path=$(_abspath ${out_dir})/${module_path}.tar.gz
+
+    [[ $YIO_DEBUG == "yes" ]] && v="-v"
 
     log_info "Packaging module ${m}"
-
     mkdir -p $(dirname ${archive_path})
+    tar ${v} -czf ${archive_path}  -X ".gitignore" -C ${m} .
 
-    _pushd ${m}
-    find . -type f -not -path '*/.terraform/*' -exec tar rf ${archive_path}.tar {} \;
-    gzip -f ${archive_path}.tar
-    _popd
-
-    log_info "Packaged ${module_path} to ${archive_path}.tar.gz"
+    log_info "Packaged ${module_path} to ${archive_path}"
 
     echo ${module_path}.tar.gz
 }
@@ -126,6 +134,10 @@ function publish_module() {
     local rc
     local out
 
+    [[ -z $s3_bucket ]] && fail "s3_bucket must be set"
+    [[ -z $s3_region ]] && fail "s3_region must be set"
+    web_url=${web_url:-"http://${s3_bucket}.s3-website-${s3_region}.amazonaws.com"}
+
     local upload_url="s3://${s3_bucket}/${module_path}"
     local web_url="${web_url}/${module_path}"
 
@@ -147,17 +159,6 @@ function publish_module() {
     fi
 }
 
-function check_args() {
-    [[ -z $s3_bucket ]] && fail "s3_bucket must be set"
-    [[ -z $s3_region ]] && fail "s3_region must be set"
-
-    web_url=${web_url:-"http://${s3_bucket}.s3-website-${s3_region}.amazonaws.com"}
-
-    log_debug "S3 Bucket: '${s3_bucket}'"
-    log_debug "S3 Region: '${s3_region}'"
-    log_debug "Web url: '${web_url}'"
-}
-
 function check_modules() {
     local has_failures=0
     local rc=0
@@ -165,6 +166,9 @@ function check_modules() {
 
     local version
     local module_path
+
+    [[ -z $s3_bucket ]] && fail "s3_bucket must be set"
+    [[ -z $s3_region ]] && fail "s3_region must be set"
 
     log_line
 
@@ -248,7 +252,7 @@ function package_modules() {
 }
 
 parse_opts ${@}
-check_args
+# check_args
 
 if [[ "$check_only" == "yes" ]]; then
     log_info "Checking versions only"
