@@ -1,45 +1,38 @@
 locals {
   # default for optional values, will be stripped
-  nil = "~"
+  nil           = "~"
+  replace_chars = "/[^A-Za-z0-9]+/"
 
-  nil_context = {
-    env       = null
-    service   = null
-    slug      = null
-    tier      = null
-    owner     = null
-    component = null
-    tags      = null
-  }
-
-  parent_context = var.context != null ? var.context : local.nil_context
-
-  default_service = coalesce(var.service, local.parent_context.service)
-  default_slug    = lower(replace(local.default_service, "/[^A-Za-z0-9]+/", "-"))
+  # Name, using 'service' as alias
+  name = coalesce(var.name, var.service, var.context.name)
 
   # direct vars take prio over parent context
   context = {
-    # mandatory attributes, if both local parent values are empty, coalesce will fail
-    service = local.default_service
-    env     = coalesce(var.env, local.parent_context.env)
-    owner   = coalesce(var.owner, local.parent_context.owner)
-    slug    = coalesce(var.slug, local.parent_context.slug, local.default_slug)
+    # Mandatory attributes, if both local parent values are empty, coalesce will fail
+    name  = local.name
+    env   = lower(replace(coalesce(var.env, var.context.env), local.replace_chars, "-"))
+    owner = lower(replace(coalesce(var.owner, var.context.owner), local.replace_chars, "-"))
+    slug  = lower(replace(coalesce(var.slug, local.name, var.context.slug), local.replace_chars, "-"))
 
-    # coalesce can't return null or an empty string, so we need to perform this little stunt
-    tier      = replace(coalesce(var.tier, local.parent_context.tier, local.nil), local.nil, "")
-    component = replace(coalesce(var.component, local.parent_context.component, local.nil), local.nil, "")
+    # Coalesce() can't return null or an empty string, so we need to perform this little stunt
+    tier      = replace(coalesce(var.tier, var.context.tier, local.nil), local.nil, "")
+    service   = replace(coalesce(var.service, var.context.service, local.nil), local.nil, "")
+    component = replace(coalesce(var.component, var.context.component, local.nil), local.nil, "")
 
-    # tags are merged with parent context
-    tags = merge(var.tags, coalesce(local.parent_context.tags, {}))
+    # Tags are merged, not overridden
+    tags = merge(var.tags, var.context.tags)
   }
 
   parts = compact([local.context.env, local.context.slug, local.context.component])
 
+  # Namespace is the main identifier for resources
   namespace = join("-", local.parts)
-  path      = join("/", local.parts)
-  iam_path  = format("/%s/", local.path)
 
-  default_tags = {
+  # Path for directory like structures, follows the same pattern
+  path = join("/", local.parts)
+
+  # Standard tags based on context labels
+  standard_tags = {
     Terraform   = true
     Name        = local.namespace
     Environment = local.context.env
@@ -48,5 +41,9 @@ locals {
     Tier        = local.context.tier
   }
 
-  tags = merge(local.default_tags, local.context.tags)
+  # Merge with var.tags, the latter take precedence
+  all_tags = merge(local.standard_tags, local.context.tags)
+
+  # Remove empty string values
+  tags = { for k, v in local.all_tags : k => v if v != "" }
 }

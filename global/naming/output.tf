@@ -8,11 +8,6 @@ output "path" {
   value       = local.path
 }
 
-output "iam_path" {
-  description = "Path prefix for IAM resources, with leading and trailing slash"
-  value       = local.iam_path
-}
-
 output "tags" {
   description = "Tags to apply to resources"
   value       = local.tags
@@ -28,10 +23,10 @@ output "service" {
   value       = local.context.service
 }
 
-# output "slug" {
-#   description = "Service slug"
-#   value       = local.context.slug
-# }
+output "slug" {
+  description = "Service slug"
+  value       = local.context.slug
+}
 
 output "tier" {
   description = "Service tier"

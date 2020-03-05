@@ -4,8 +4,14 @@ variable "env" {
   default     = null
 }
 
+variable "name" {
+  description = "Component or service name"
+  type        = string
+  default     = null
+}
+
 variable "service" {
-  description = "Service name"
+  description = "Service name. Alias for `name`"
   type        = string
   default     = null
 }
@@ -43,13 +49,28 @@ variable "component" {
 variable "context" {
   type = object({
     env       = string
+    name      = string
+    owner     = string
     service   = string
     slug      = string
     tier      = string
-    owner     = string
     component = string
     tags      = map(string)
   })
 
-  default = null
+  default = {
+    env       = null
+    name      = null
+    service   = null
+    slug      = null
+    tier      = null
+    owner     = null
+    component = null
+    tags      = {}
+  }
+}
+
+variable "namespace" {
+  description = "Override the default namespace"
+  default     = null
 }

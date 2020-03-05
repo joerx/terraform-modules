@@ -1,25 +1,10 @@
-variable "name" {
-  type    = string
-  default = null
+variable "enabled" {
+  type    = bool
+  default = true
 }
 
-variable "env" {
-  type = string
-}
-
-variable "service" {
-  type    = string
-  default = "hopper"
-}
-
-variable "owner" {
-  type    = string
-  default = "netadmin"
-}
-
-variable "tier" {
-  type    = string
-  default = "networking"
+variable "naming" {
+  type = any
 }
 
 variable "ami" {
