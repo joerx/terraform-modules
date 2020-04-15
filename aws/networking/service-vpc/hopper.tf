@@ -1,5 +1,5 @@
 module "hopper" {
-  source = "http://tfmodules.lolcatz.de/aws/networking/hopper-v1.1.tar.gz"
+  source = "http://tfmodules.lolcatz.de/aws/networking/hopper-v1.2.tar.gz"
 
   enabled = var.create_hopper
   naming  = module.naming_hopper.context

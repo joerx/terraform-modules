@@ -1,15 +1,14 @@
 locals {
   keyfile_output_path = var.keyfile_output_path != null ? var.keyfile_output_path : "${path.module}/out/key_rsa.pem"
 
-  instance_id = var.enabled ? aws_instance.hopper[0].id : null
-  public_ip   = var.enabled ? aws_instance.hopper[0].public_ip : null
-  ssh_key     = var.enabled ? local_file.admin_private_key[0].filename : null
+  instance_id = join("", aws_instance.hopper.*.id)
+  public_ip   = join("", aws_instance.hopper.*.public_ip)
+  ssh_key     = join("", local_file.admin_private_key.*.filename)
   login       = var.enabled ? format("ssh -i %s %s@%s", local.ssh_key, var.ami.user, local.public_ip) : null
 }
 
 module "naming" {
-  # source    = "http://tfmodules.lolcatz.de/global/naming-v1.2.tar.gz"
-  source    = "/Users/joerg.henning/Devel/joerx/terraform-modules/global/naming"
+  source    = "http://tfmodules.lolcatz.de/global/naming-v1.3.tar.gz"
   context   = var.naming
   component = "hopper"
 }
