@@ -52,6 +52,10 @@ locals {
       memory            = lookup(c, "memory", null)
       memoryReservation = lookup(c, "memory_reservation", null)
 
+      volumesFrom = []
+      mountPoints = []
+      user        = "0"
+
       repositoryCredentials = lookup(c, "docker_login", null) != null ? {
         credentialsParameter = data.aws_secretsmanager_secret.docker_login[c["docker_login"]].arn
       } : null
@@ -63,6 +67,7 @@ locals {
       portMappings = [for p in lookup(c, "ports", []) : {
         containerPort = p
         hostPort      = p
+        protocol      = "tcp"
       }]
 
       logConfiguration = {
